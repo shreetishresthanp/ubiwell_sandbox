@@ -1,18 +1,25 @@
 "use client";
+
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
-  const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
+
+  const searchParams = useSearchParams();
+  const initialDate = searchParams.get('date') || dayjs().format('YYYY-MM-DD');
+
+  const [date, setDate] = useState(initialDate);
   const [stats, setStats] = useState([]);
 
   useEffect(() => {
+    if (!date) return;
     fetch(`/api/stats?date=${date}`)
-      .then(res => res.json())
-      .then(data => setStats(data))
-      .catch(console.error);
+      .then((res) => res.json())
+      .then(setStats);
   }, [date]);
+
 
   const changeDate = (delta) => {
     setDate(prev => dayjs(prev).add(delta, 'day').format('YYYY-MM-DD'));
@@ -41,9 +48,14 @@ export default function Dashboard() {
               ← Prev
             </button>
             <button
+  onClick={() => setDate(dayjs().format('YYYY-MM-DD'))}
+  className="px-4 py-2 bg-gray-100 text-gray-800 rounded-md border border-gray-300 hover:bg-gray-200 transition"
+>
+  📅 Today
+</button>
+            <button
               onClick={() => changeDate(1)}
               className="px-4 py-2 bg-gray-100 text-gray-800 border border-gray-300 rounded-md hover:bg-gray-200 transition"
-              // className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
             >
               Next →
             </button>
@@ -54,9 +66,9 @@ export default function Dashboard() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LSTM</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IF</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LSTM Anomaly Count</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Isolation Forest Anomaly Count</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Daily Prompts</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Weekly Prompts (M-F) </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details </th>
@@ -67,10 +79,20 @@ export default function Dashboard() {
               {stats.map((s, i) => (
                 <tr key={i}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{s.uid}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s._lstm_count}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s._if_count}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s._daily_prompted_num}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s._weekly_prompted_num}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s.lstm_count}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s.if_count}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s.daily_prompted_num}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s.weekly_prompted_num}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <a href={`/details/${s.uid}`} className="text-blue-600 hover:underline font-medium">
+                      Details
+                    </a>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <a href={`/settings/${s.uid}?date=${date}`} className="text-blue-600 hover:underline font-medium">
+                      Change Model Settings
+                    </a>
+                  </td>
                 </tr>
               ))}
               {stats.length === 0 && (
@@ -87,11 +109,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-// export default function Home() {
-//   return (
-//     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-//       <h1 className="text-4xl font-bold text-blue-600 text-center">Tailwind is now working! 🎉</h1>
-//     </div>
-//   );
-// }

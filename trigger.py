@@ -73,23 +73,23 @@ class ModelSettings:
 
 class DailyStats:
     def __init__(self):
-        self._date = now
-        self._uid = ""
-        self._lstm_count = 0
-        self._if_count = 0
-        self._daily_prompted_num = 0
-        self._weekly_prompted_num = 0
-        self._details = ""
-        self._model_settings = ModelSettings()
+        self.date = now
+        self.uid = ""
+        self.lstm_count = 0
+        self.if_count = 0
+        self.daily_prompted_num = 0
+        self.weekly_prompted_num = 0
+        self.details = ""
+        self.model_settings = ModelSettings()
 
     def __init__(self, uid="", lstm_count=0, if_count=0, daily_prompted_num=0, weekly_prompted_num=0, details=""):
-        self._date = datetime.now()
-        self._uid = uid
-        self._lstm_count = lstm_count
-        self._if_count = if_count
-        self._daily_prompted_num = daily_prompted_num
-        self._weekly_prompted_num = weekly_prompted_num
-        self._details = details
+        self.date = datetime.today().strftime("%Y-%m-%d")
+        self.uid = uid
+        self.lstm_count = lstm_count
+        self.if_count = if_count
+        self.daily_prompted_num = daily_prompted_num
+        self.weekly_prompted_num = weekly_prompted_num
+        self.details = details
 
 class DailyStatsPerUID:
     def __init__(self):
@@ -103,26 +103,30 @@ for doc in today_docs:
     uid = doc["uid"]
     if uid not in dailystatsperuid:
         dailystatsperuid[uid] = DailyStats()
+    dailystatsperuid[uid].uid = uid
+    dailystatsperuid[uid].details = doc["reason"]
     if doc["is_anomaly_lstm"] == 1:
-        dailystatsperuid[uid]._lstm_count += 1
+        dailystatsperuid[uid].lstm_count += 1
     if doc["is_anomaly_isolation"] == 1:
-        dailystatsperuid[uid]._if_count += 1
+        dailystatsperuid[uid].if_count += 1
     if doc["did_prompt"] == True:
-        dailystatsperuid[uid]._daily_prompted_num += 1
+        dailystatsperuid[uid].daily_prompted_num += 1
 
 # Weekly Aggregation
 for doc in week_docs:
     uid = doc.get("uid")
     if doc.get("did_prompt") is True:
-        dailystatsperuid[uid]._weekly_prompted_num += 1
+        dailystatsperuid[uid].weekly_prompted_num += 1
     
+#To-Do: Replace based on day
+# Sorting by date, num_prompts
 
 # Store or print results
 for uid, stats in dailystatsperuid.items():
     print(uid, stats.__dict__)
     # Insert or update in DB
     stats_collection.update_one(
-        {"uid": uid},
+        {"uid": uid, "date": stats.date},
         {"$set": stats.__dict__},
         upsert=True
     )
