@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { motion } from "framer-motion";
@@ -29,7 +31,6 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-100 px-4 py-6 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          {/* <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-gray-800 tracking-tight text-center mb-6"> Daily Stats for {date}</h1> */}
           <motion.h1
   className="text-2xl sm:text-3xl md:text-4xl font-semibold text-gray-800 tracking-tight text-center mb-6"
   initial={{ opacity: 0, y: -10 }}
@@ -39,7 +40,7 @@ export default function Dashboard() {
   Daily Stats for {date}
           </motion.h1>
           
-          <div className="space-x-2">
+          <div className="sticky top-0 py-2 z-10 border-b space-x-2">
             <button
               onClick={() => changeDate(-1)}
               // className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
@@ -59,7 +60,16 @@ export default function Dashboard() {
             >
               Next →
             </button>
+            <label className="text-sm text-gray-600 mr-2">Jump to date:</label>
+            <DatePicker
+  selected={dayjs(date).toDate()}
+  onChange={(newDate) => setDate(dayjs(newDate).format('YYYY-MM-DD'))}
+  className="border px-3 py-1 rounded-md  border-gray-800 text-gray-800"
+  maxDate={new Date()} 
+/>
+
           </div>
+
         </div>
 
         <div className="overflow-x-auto bg-white shadow rounded-lg">
@@ -84,7 +94,7 @@ export default function Dashboard() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s.daily_prompted_num}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{s.weekly_prompted_num}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <a href={`/details/${s.uid}`} className="text-blue-600 hover:underline font-medium">
+                    <a href={`/details/${s.uid}?date=${date}`} className="text-blue-600 hover:underline font-medium">
                       Details
                     </a>
                   </td>
