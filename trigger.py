@@ -16,6 +16,30 @@ class MongoConnection:
         collection = self._database.get_collection(coll)
         return collection
     
+class DailyStats:
+    def __init__(self):
+        self.date = now
+        self.uid = ""
+        self.lstm_count = 0
+        self.if_count = 0
+        self.daily_prompted_num = 0
+        self.weekly_prompted_num = 0
+        self.details = ""
+
+    def __init__(self, uid="", lstm_count=0, if_count=0, daily_prompted_num=0, weekly_prompted_num=0, details=""):
+        self.date = datetime.today().strftime("%Y-%m-%d")
+        self.uid = uid
+        self.lstm_count = lstm_count
+        self.if_count = if_count
+        self.daily_prompted_num = daily_prompted_num
+        self.weekly_prompted_num = weekly_prompted_num
+        self.details = details
+
+class DailyStatsPerUID:
+    def __init__(self):
+        self._uid = ""
+        self._daily_stats = DailyStats()
+
 # initialize mongo collection
 conn = MongoConnection()
 conn.connectToDB()
@@ -59,57 +83,29 @@ week_docs = list(anomaly_results.find({
     }
 }))
 
-print([x for x in today_docs])
-
-
-class ModelSettings:
-    def __init__(self):
-        self.contamination = 0.1
-        self.timesteps_lstm = 10
-        self.threshold_lstm = 95
-        self.days_to_train_isolation = 15
-        self.days_to_train_lstm = 20
-
-
-class DailyStats:
-    def __init__(self):
-        self.date = now
-        self.uid = ""
-        self.lstm_count = 0
-        self.if_count = 0
-        self.daily_prompted_num = 0
-        self.weekly_prompted_num = 0
-        self.details = ""
-        self.model_settings = ModelSettings()
-
-    def __init__(self, uid="", lstm_count=0, if_count=0, daily_prompted_num=0, weekly_prompted_num=0, details=""):
-        self.date = datetime.today().strftime("%Y-%m-%d")
-        self.uid = uid
-        self.lstm_count = lstm_count
-        self.if_count = if_count
-        self.daily_prompted_num = daily_prompted_num
-        self.weekly_prompted_num = weekly_prompted_num
-        self.details = details
-
-class DailyStatsPerUID:
-    def __init__(self):
-        self._uid = ""
-        self._daily_stats = DailyStats()
+# print([x for x in today_docs])
 
 dailystatsperuid = dict()
 
 # Daily Aggregation
 for doc in today_docs:
+    if doc is None or len(doc) == 0:
+        print("ERROR: Empty document")
+        continue
+    if doc["uid"] is None or len(doc["uid"]) == 0:
+        print("ERROR: Invalid user id")
+        continue    
     uid = doc["uid"]
     if uid not in dailystatsperuid:
         dailystatsperuid[uid] = DailyStats()
     dailystatsperuid[uid].uid = uid
-    dailystatsperuid[uid].details = doc["reason"]
-    if doc["is_anomaly_lstm"] == 1:
+    if "reason" in doc:
+        dailystatsperuid[uid].details = doc["reason"]
+    if "is_anomaly_lstm" in doc and doc["is_anomaly_lstm"] == 1:
         dailystatsperuid[uid].lstm_count += 1
-    if doc["is_anomaly_isolation"] == 1:
+    if "is_anomaly_isolation" in doc and doc["is_anomaly_isolation"] == 1:
         dailystatsperuid[uid].if_count += 1
-    if doc["did_prompt"] == True:
+    if "did_prompt" in doc and doc["did_prompt"] == True:
         dailystatsperuid[uid].daily_prompted_num += 1
 
 # Weekly Aggregation
@@ -118,23 +114,19 @@ for doc in week_docs:
     if doc.get("did_prompt") is True:
         dailystatsperuid[uid].weekly_prompted_num += 1
     
-#To-Do: Replace based on day
-# Sorting by date, num_prompts
-
 # Store or print results
 for uid, stats in dailystatsperuid.items():
-    print(uid, stats.__dict__)
+    # print(uid, stats.__dict__)
     # Insert or update in DB
-    stats_collection.update_one(
-        {"uid": uid, "date": stats.date},
-        {"$set": stats.__dict__},
-        upsert=True
-    )
+    try:
+        stats_collection.update_one(
+            {"uid": uid, "date": stats.date},
+            {"$set": stats.__dict__},
+            upsert=True
+        )
+    except Exception as e:
+        print("Error adding to aggregation db")
+        print(e);
 
 
-
-
-# u_id, LSTM anomaly count daily, IF anomaly count daily, how many times prompted daily,
-# total prompts in a week, details, model settings
-# What happens if start time and end time are divided across 2 days?
 

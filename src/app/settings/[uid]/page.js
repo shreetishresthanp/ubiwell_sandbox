@@ -60,8 +60,6 @@ Object.keys(original).forEach((key) => {
   merged[key] = form[key] !== '' ? Number(form[key]) : original[key];
 });
   try {
-
-
     const res = await fetch(`/api/settings/${uid}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -113,7 +111,6 @@ const resetAll = () => {
   <ArrowLeft size={16} className="mr-2" />
   Back to Dashboard
 </button>
-
 
         {/* Header */}
         <div className="text-center">
@@ -169,8 +166,6 @@ const resetAll = () => {
   );
 })}
 
-
-
           <div className="flex justify-end space-x-4">
             <button
               type="submit"
@@ -193,7 +188,7 @@ const resetAll = () => {
           </div>
 
           {submitted && (
-            <p className="text-green-600 text-sm text-right">Settings saved! ✅ (Mock only)</p>
+            <p className="text-green-600 text-sm text-right">Settings saved! ✅</p>
           )}
         </form>
       </div>
